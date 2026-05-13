@@ -193,7 +193,7 @@ let connected = false;
 let apiBase = 'http://localhost:3000';
 let rangeStart = new Date();
 let rangeDays = 30;
-const DAY_W = 28; // px per day
+const DAY_W = 32; // px per day
 const LABEL_W = 130;
 const MONTHS_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const DAYS_ES = ['D','L','M','X','J','V','S'];
@@ -372,6 +372,15 @@ function highlightDetailRow(bid){
   document.querySelector('.btab[data-tab="detalle"]').classList.add('active');
   document.getElementById('tab-detalle').style.display='block';
   document.getElementById('tab-sql').style.display='none';
+  // scroll gantt to order start date
+  const o=orders.find(x=>x.b===bid);
+  if(o){
+    const s=pending[bid]?pending[bid].start:o.start;
+    const sD=parseDate(s);
+    const offsetDays=diffDays(rangeStart,sD)-3;
+    const scrollArea=document.getElementById('gantt-scroll');
+    scrollArea.scrollLeft=Math.max(0,offsetDays*DAY_W);
+  }
 }
 
 function renderDetail(){
@@ -501,9 +510,19 @@ function getStatus(d){
   return 'asignado';
 }
 
-// Navigation
-document.getElementById('btn-prev').addEventListener('click',()=>{rangeStart=addDays(rangeStart,-rangeDays);renderGantt();});
-document.getElementById('btn-next').addEventListener('click',()=>{rangeStart=addDays(rangeStart,rangeDays);renderGantt();});
+// Navigation — move by half the range for smoother scrolling
+document.getElementById('btn-prev').addEventListener('click',()=>{
+  rangeStart=addDays(rangeStart,-Math.max(7,Math.floor(rangeDays/2)));renderGantt();
+});
+document.getElementById('btn-next').addEventListener('click',()=>{
+  rangeStart=addDays(rangeStart,Math.max(7,Math.floor(rangeDays/2)));renderGantt();
+});
+// Also allow mouse wheel horizontal scroll on gantt
+document.getElementById('gantt-scroll').addEventListener('wheel',e=>{
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY)) return;
+  e.preventDefault();
+  document.getElementById('gantt-scroll').scrollLeft+=e.deltaY;
+},{passive:false});
 document.getElementById('btn-today').addEventListener('click',()=>{rangeStart=addDays(new Date(),-5);rangeStart.setHours(0,0,0,0);renderGantt();});
 document.getElementById('btn-fit').addEventListener('click',fitToOrders);
 document.getElementById('zoom-select').addEventListener('change',e=>{rangeDays=parseInt(e.target.value);renderGantt();});
