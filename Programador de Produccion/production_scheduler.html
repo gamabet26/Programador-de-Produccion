@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Programador de Producción</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:12px;background:#f4f4f4;color:#222}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#2c3e50;color:#fff;flex-wrap:wrap}
+.topbar h1{font-size:14px;font-weight:bold;margin-right:8px}
+.btn{padding:4px 10px;border-radius:4px;border:1px solid #555;background:#3d5166;color:#fff;font-size:11px;cursor:pointer}
+.btn:hover{background:#4a6280}
+.btn.green{background:#27ae60;border-color:#1e8449}
+.btn.blue{background:#2980b9;border-color:#1a6fa0}
+.legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px}
+.leg-dot{width:12px;height:12px;border-radius:2px}
+.nav-week{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:bold;color:#fff}
+.nav-week button{padding:2px 8px;border-radius:4px;border:1px solid #666;background:#3d5166;color:#fff;cursor:pointer;font-size:13px}
+.nav-week button:hover{background:#4a6280}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:160px;min-width:160px;border-right:1px solid #ccc;overflow-y:auto;background:#fff}
+.sidebar-title{padding:6px 10px;font-size:11px;font-weight:bold;color:#555;background:#eee;border-bottom:1px solid #ccc;position:sticky;top:0}
+.line-item{display:flex;align-items:center;gap:6px;padding:5px 10px;border-bottom:1px solid #eee;cursor:pointer;font-size:11px}
+.line-item:hover{background:#f0f4f8}
+.line-item input[type=checkbox]{cursor:pointer;width:13px;height:13px}
+.gantt-area{flex:1;overflow:auto;display:flex;flex-direction:column;background:#fff}
+.gantt-header-row{display:flex;background:#e8ecf0;border-bottom:1px solid #bbb;position:sticky;top:0;z-index:10}
+.gh-line-col{width:130px;min-width:130px;padding:6px 10px;font-size:11px;font-weight:bold;color:#555;border-right:1px solid #bbb}
+.gh-days{display:flex;flex:1}
+.gh-day-col{flex:1;min-width:90px;border-right:1px solid #ddd;text-align:center}
+.gh-day-name{padding:4px;font-size:11px;font-weight:bold;border-bottom:1px solid #ddd}
+.gh-day-date{padding:2px;font-size:10px;color:#666}
+.gh-day-col.weekend{background:#fce8e8}
+.gantt-body{flex:1}
+.gantt-line-row{display:flex;border-bottom:1px solid #ddd;min-height:52px}
+.gantt-line-row:hover{background:#f9fbfc}
+.gl-label{width:130px;min-width:130px;padding:6px 10px;border-right:1px solid #ccc;display:flex;flex-direction:column;justify-content:center;background:#f8f9fa}
+.gl-name{font-size:11px;font-weight:bold;color:#333}
+.gl-count{font-size:10px;color:#888}
+.gl-days{display:flex;flex:1}
+.gl-day-cell{flex:1;min-width:90px;border-right:1px solid #eee;position:relative}
+.gl-day-cell.weekend{background:#fff5f5}
+.batch-bar{position:absolute;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:bold;white-space:nowrap;overflow:hidden;border:1px solid rgba(0,0,0,0.15);transition:filter .15s;left:2px;right:2px}
+.batch-bar:hover{filter:brightness(0.85)}
+.batch-bar.selected{outline:2px solid #2980b9;z-index:5}
+.st-liberado{background:#9FE1CB;color:#085041}
+.st-asignado{background:#FAC775;color:#633806}
+.st-tarde{background:#F5A0A0;color:#7b1a1a}
+.st-emitido{background:#B5D4F4;color:#0C447C}
+.bottom-panel{border-top:2px solid #bbb;background:#fff;display:flex;flex-direction:column}
+.bottom-tabs{display:flex;border-bottom:1px solid #ccc;background:#eee}
+.btab{padding:6px 14px;font-size:11px;cursor:pointer;border:none;background:none;color:#555;border-bottom:2px solid transparent}
+.btab:hover{background:#e0e0e0}
+.btab.active{color:#2980b9;font-weight:bold;border-bottom:2px solid #2980b9;background:#fff}
+.detail-table-wrap{overflow:auto;height:200px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:6px 10px;text-align:left;font-weight:bold;color:#555;border-bottom:1px solid #ccc;white-space:nowrap;position:sticky;top:0;background:#f0f2f4}
+td{padding:5px 10px;border-bottom:1px solid #eee;white-space:nowrap}
+tr:hover td{background:#f5f8fc}
+tr.selected-row td{background:#e8f4fd}
+tr.changed-row td{background:#fffbe6}
+input[type=date]{padding:2px 5px;border:1px solid #ccc;border-radius:3px;font-size:11px}
+.save-btn{padding:2px 7px;font-size:10px;border-radius:3px;border:1px solid #2980b9;background:#d6eaf8;color:#1a5276;cursor:pointer;margin-left:4px}
+.save-btn:hover{background:#aed6f1}
+.status-bar{display:flex;gap:16px;padding:5px 12px;font-size:11px;color:#555;background:#e8ecf0;border-bottom:1px solid #ccc}
+.status-bar span{display:flex;align-items:center;gap:4px}
+.pending-badge{background:#e67e22;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px}
+.sql-box{padding:10px;font-family:monospace;font-size:11px;overflow:auto;height:200px;white-space:pre;background:#1e2a35;color:#a8d8a8}
+.toast{position:fixed;bottom:16px;right:16px;padding:10px 18px;border-radius:6px;background:#27ae60;color:#fff;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;font-weight:bold}
+.toast.show{opacity:1}
+.api-bar{display:flex;align-items:center;gap:8px;padding:5px 12px;background:#1a252f;flex-wrap:wrap}
+.api-bar label{font-size:11px;color:#aaa}
+.api-bar input{padding:3px 7px;border:1px solid #555;border-radius:3px;font-size:11px;background:#2c3e50;color:#fff;width:220px}
+.dot{width:8px;height:8px;border-radius:50%;background:#888;display:inline-block}
+.dot.ok{background:#27ae60}
+.dot.err{background:#e74c3c}
+#stat-pending{font-weight:bold;color:#e67e22}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="topbar">
+  <h1>&#128197; Programador de Producción BatchMaster</h1>
+  <div class="nav-week">
+    <button id="btn-prev">&#8249;</button>
+    <span id="week-label" style="min-width:180px;text-align:center"></span>
+    <button id="btn-next">&#8250;</button>
+    <button class="btn" id="btn-today">Hoy</button>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#9FE1CB"></div>Liberado</div>
+    <div class="leg"><div class="leg-dot" style="background:#FAC775"></div>Asignado</div>
+    <div class="leg"><div class="leg-dot" style="background:#F5A0A0"></div>Tarde</div>
+    <div class="leg"><div class="leg-dot" style="background:#B5D4F4"></div>Emitido</div>
+  </div>
+  <button class="btn green" id="btn-load">&#8635; Cargar desde API</button>
+  <button class="btn blue" id="btn-export">&#8659; Exportar SQL</button>
+</div>
+
+<div class="api-bar">
+  <span class="dot" id="api-dot"></span>
+  <label>API:</label>
+  <input type="text" id="api-url" value="http://localhost:3000"/>
+  <button class="btn" id="btn-connect">Conectar</button>
+  <span id="api-status" style="font-size:11px;color:#aaa">Sin conectar — datos de ejemplo</span>
+</div>
+
+<div class="status-bar">
+  <span id="stat-total">0 órdenes</span>
+  <span id="stat-pending">Sin cambios pendientes</span>
+  <span id="stat-lines">0 líneas activas</span>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-title">Líneas de producción</div>
+    <div id="lines-list"></div>
+  </div>
+  <div class="gantt-area" id="gantt-area">
+    <div class="gantt-header-row" id="gantt-header"></div>
+    <div class="gantt-body" id="gantt-body"></div>
+  </div>
+</div>
+
+<div class="bottom-panel">
+  <div class="bottom-tabs">
+    <button class="btab active" data-tab="detalle">&#128203; Detalle de OPs</button>
+    <button class="btab" data-tab="sql">&#128196; SQL generado</button>
+  </div>
+  <div id="tab-detalle" class="detail-table-wrap">
+    <table>
+      <thead><tr>
+        <th>Batch No</th><th>Pedido Ref</th><th>Cliente</th><th>Producto</th>
+        <th>Descripción</th><th>Línea</th><th>Cant.</th><th>Estado</th>
+        <th>Inicio prog.</th><th>Fin prog.</th><th>Acción</th>
+      </tr></thead>
+      <tbody id="detail-body"></tbody>
+    </table>
+  </div>
+  <div id="tab-sql" style="display:none">
+    <div style="padding:6px 10px;background:#1a252f;display:flex;gap:8px">
+      <button class="btn" id="btn-copy-sql">Copiar SQL</button>
+      <button class="btn green" id="btn-save-all">Guardar todos los cambios</button>
+    </div>
+    <div class="sql-box" id="sql-content"></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ORDERS = [
+  {b:'26010396-001',so:'100003003',cli:'ZUBEX USA LLC',pid:'30-560901-16260-01',desc:'R2175-GEN-S/I-RJO-136MM',linea:'EMP001',cant:'50',uom:'MTS',start:'2025-01-16',end:'2025-01-17',status:'liberado'},
+  {b:'26010771-001',so:'102919',cli:'SUKARNE',pid:'30-581102-16374-01',desc:'U8175-MTY128-SUKARNE MOLIDA RES 400G',linea:'COR003',cant:'51200',uom:'MTS',start:'2025-01-20',end:'2026-09-12',status:'asignado'},
+  {b:'26020753-001',so:'100002608',cli:'PUBLICO GENERAL',pid:'30-010903-03048-01',desc:'Z5CR-GEN-S/I-CLO-16X22 SCS',linea:'BOL010',cant:'0.05',uom:'MTS',start:'2025-01-28',end:'2025-01-28',status:'emitido'},
+  {b:'26040206-001',so:'100002608',cli:'PUBLICO GENERAL',pid:'30-010903-03048-01',desc:'Z5CR-GEN-S/I-CLO-16X22 SCS',linea:'BOL010',cant:'0.05',uom:'MTS',start:'2025-01-28',end:'2025-01-28',status:'tarde'},
+  {b:'26040057-001',so:'103316',cli:'SALCHICHAS Y JAMONES DE MEXICO',pid:'30-191102-17290-01',desc:'ZOXU875M-PNA T AMER D HECTOR',linea:'COR002',cant:'12000',uom:'MTS',start:'2025-02-15',end:'2026-04-07',status:'asignado'},
+  {b:'26040057-002',so:'103316',cli:'SALCHICHAS Y JAMONES DE MEXICO',pid:'30-191102-17290-01',desc:'ZOXU875M-PNA T AMER D HECTOR',linea:'REC001',cant:'12000',uom:'MTS',start:'2025-04-09',end:'2026-04-07',status:'liberado'},
+  {b:'26020754-001',so:'100002731',cli:'ZUBEX USA LLC',pid:'30-580902-14513-01',desc:'U8175-GEN-S/I-CLO-118MMX30M',linea:'COR003',cant:'25',uom:'MTS',start:'2025-05-07',end:'2025-05-07',status:'emitido'},
+  {b:'26040107-002',so:'103316',cli:'SALCHICHAS Y JAMONES DE MEXICO',pid:'30-191102-17290-01',desc:'ZOXU875M-PNA T AMER D HECTOR',linea:'REC001',cant:'12000',uom:'MTS',start:'2025-05-20',end:'2025-10-16',status:'tarde'},
+  {b:'26040107-001',so:'103316',cli:'SALCHICHAS Y JAMONES DE MEXICO',pid:'30-191102-17290-01',desc:'ZOXU875M-PNA T AMER D HECTOR',linea:'COR002',cant:'12000',uom:'MTS',start:'2025-05-20',end:'2026-04-04',status:'asignado'},
+];
+
+let orders = ORDERS.map(o=>({...o}));
+let pending = {};
+let selectedLines = new Set(orders.map(o=>o.linea));
+let weekOffset = 0;
+let selectedBatch = null;
+let connected = false;
+let apiBase = 'http://localhost:3000';
+
+const STATUS_CLASS = {liberado:'st-liberado',asignado:'st-asignado',tarde:'st-tarde',emitido:'st-emitido'};
+const DAYS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function showToast(msg, color='#27ae60'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+function getWeekStart(){
+  const now = new Date();
+  now.setDate(now.getDate() + weekOffset * 7);
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  now.setDate(now.getDate() + diff);
+  now.setHours(0,0,0,0);
+  return now;
+}
+
+function getWeekDays(){
+  const start = getWeekStart();
+  const days = [];
+  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(d.getDate()+i);days.push(d);}
+  return days;
+}
+
+function dateKey(d){ return d.toISOString().split('T')[0]; }
+function fmtDay(d){ return d.getDate()+'/'+(d.getMonth()+1); }
+
+function updateWeekLabel(){
+  const days = getWeekDays();
+  document.getElementById('week-label').textContent =
+    `${fmtDay(days[0])} ${MONTHS_ES[days[0].getMonth()]} — ${fmtDay(days[6])} ${MONTHS_ES[days[6].getMonth()]} ${days[6].getFullYear()}`;
+}
+
+function updateStats(){
+  const vis = orders.filter(o=>selectedLines.has(o.linea));
+  const pend = Object.keys(pending).length;
+  document.getElementById('stat-total').textContent = `${vis.length} órdenes visibles`;
+  document.getElementById('stat-pending').textContent = pend ? `⚠ ${pend} cambio(s) pendiente(s)` : 'Sin cambios pendientes';
+  document.getElementById('stat-lines').textContent = `${selectedLines.size} líneas activas`;
+}
+
+function renderSidebar(){
+  const lines = [...new Set(orders.map(o=>o.linea))].sort();
+  document.getElementById('lines-list').innerHTML = lines.map(l=>`
+    <div class="line-item">
+      <input type="checkbox" id="chk-${l}" ${selectedLines.has(l)?'checked':''}>
+      <label for="chk-${l}" style="cursor:pointer;flex:1">${l}</label>
+    </div>
+  `).join('');
+  lines.forEach(l=>{
+    document.getElementById('chk-'+l).addEventListener('change', e=>{
+      if(e.target.checked) selectedLines.add(l); else selectedLines.delete(l);
+      renderGantt(); renderDetail(); updateStats();
+    });
+  });
+}
+
+function renderGantt(){
+  const days = getWeekDays();
+  updateWeekLabel();
+
+  document.getElementById('gantt-header').innerHTML = `
+    <div class="gh-line-col">Línea</div>
+    <div class="gh-days" style="display:flex;flex:1">
+      ${days.map(d=>`<div class="gh-day-col${d.getDay()===0||d.getDay()===6?' weekend':''}">
+        <div class="gh-day-name">${DAYS_ES[d.getDay()]}</div>
+        <div class="gh-day-date">${fmtDay(d)}</div>
+      </div>`).join('')}
+    </div>`;
+
+  const lines = [...selectedLines].sort();
+  if(!lines.length){
+    document.getElementById('gantt-body').innerHTML='<div style="padding:2rem;text-align:center;color:#888">Sin líneas seleccionadas</div>';
+    return;
+  }
+
+  document.getElementById('gantt-body').innerHTML = lines.map(linea=>{
+    const lineOrders = orders.filter(o=>o.linea===linea);
+    const dayCells = days.map(day=>{
+      const dk = dateKey(day);
+      const isWeekend = day.getDay()===0||day.getDay()===6;
+      const active = lineOrders.filter(o=>{
+        const s = pending[o.b]?pending[o.b].start:o.start;
+        const e = pending[o.b]?pending[o.b].end:o.end;
+        return s<=dk && e>=dk;
+      });
+      const h = Math.max(52, active.length*28+10);
+      const bars = active.map((o,i)=>{
+        const cls = STATUS_CLASS[o.status]||'st-liberado';
+        const isSel = selectedBatch===o.b;
+        return`<div class="batch-bar ${cls}${isSel?' selected':''}" style="top:${6+i*26}px" 
+          data-batch="${o.b}"
+          title="${o.b} | ${o.cli}\n${o.desc}\n${o.start} → ${o.end} | ${o.cant} ${o.uom}">
+          ${o.b}
+        </div>`;
+      }).join('');
+      return`<div class="gl-day-cell${isWeekend?' weekend':''}" style="min-height:${h}px">${bars}</div>`;
+    }).join('');
+
+    return`<div class="gantt-line-row">
+      <div class="gl-label">
+        <div class="gl-name">${linea}</div>
+        <div class="gl-count">${lineOrders.length} OP${lineOrders.length!==1?'s':''}</div>
+      </div>
+      <div class="gl-days" style="display:flex;flex:1">${dayCells}</div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.batch-bar').forEach(bar=>{
+    bar.addEventListener('click', ()=>{
+      const bid = bar.dataset.batch;
+      selectedBatch = selectedBatch===bid ? null : bid;
+      renderGantt();
+      if(selectedBatch){
+        highlightDetailRow(selectedBatch);
+        // switch to detail tab
+        document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));
+        document.querySelector('.btab[data-tab="detalle"]').classList.add('active');
+        document.getElementById('tab-detalle').style.display='block';
+        document.getElementById('tab-sql').style.display='none';
+      }
+    });
+  });
+}
+
+function highlightDetailRow(bid){
+  document.querySelectorAll('#detail-body tr').forEach(tr=>tr.classList.remove('selected-row'));
+  const row = document.querySelector(`#detail-body tr[data-batch="${bid}"]`);
+  if(row){
+    row.classList.add('selected-row');
+    row.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+
+function renderDetail(){
+  const rows = orders.filter(o=>selectedLines.has(o.linea)).map(o=>{
+    const p = pending[o.b];
+    const sv = p?p.start:o.start;
+    const ev = p?p.end:o.end;
+    const changed = !!p;
+    const isSel = selectedBatch===o.b;
+    return`<tr data-batch="${o.b}" class="${isSel?'selected-row':changed?'changed-row':''}">
+      <td><strong>${o.b}</strong></td>
+      <td>${o.so}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis">${o.cli}</td>
+      <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis">${o.pid}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${o.desc}">${o.desc}</td>
+      <td><b>${o.linea}</b></td>
+      <td>${o.cant} ${o.uom}</td>
+      <td><span class="batch-bar ${STATUS_CLASS[o.status]||'st-liberado'}" style="position:static;height:auto;padding:2px 6px;border-radius:3px;display:inline-block;font-size:10px">${o.status}</span></td>
+      <td><input type="date" value="${sv}" data-batch="${o.b}" data-field="start" class="date-input"/></td>
+      <td><input type="date" value="${ev}" data-batch="${o.b}" data-field="end" class="date-input"/></td>
+      <td>${changed?`<button class="save-btn" data-save="${o.b}">&#10003; Guardar</button><span style="font-size:10px;color:#e67e22;margin-left:4px">●</span>`:''}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('detail-body').innerHTML = rows || '<tr><td colspan="11" style="text-align:center;padding:1rem;color:#888">Sin órdenes para mostrar</td></tr>';
+
+  document.querySelectorAll('.date-input').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const bid = e.target.dataset.batch;
+      const field = e.target.dataset.field;
+      const o = orders.find(x=>x.b===bid);
+      if(!pending[bid]) pending[bid]={start:o.start,end:o.end};
+      if(field==='start') pending[bid].start=e.target.value;
+      else pending[bid].end=e.target.value;
+      renderDetail(); renderGantt(); updateStats(); generateSQL();
+    });
+  });
+
+  document.querySelectorAll('[data-save]').forEach(btn=>{
+    btn.addEventListener('click', ()=>saveOrder(btn.dataset.save));
+  });
+
+  document.querySelectorAll('#detail-body tr').forEach(tr=>{
+    tr.addEventListener('click', e=>{
+      if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON') return;
+      const bid = tr.dataset.batch;
+      if(!bid) return;
+      selectedBatch = selectedBatch===bid?null:bid;
+      renderDetail(); renderGantt();
+    });
+  });
+}
+
+function saveOrder(bid){
+  const p = pending[bid];
+  if(!p) return;
+  if(connected){
+    fetch(`${apiBase}/api/ordenes/${encodeURIComponent(bid)}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(p)
+    }).then(r=>r.json()).then(d=>{
+      if(d.success){ applyPending(bid,p); showToast(`✓ ${bid} guardado en SAP B1`); }
+      else showToast(`Error: ${d.error}`,'#e74c3c');
+    }).catch(()=>showToast('Error de conexión','#e74c3c'));
+  } else {
+    applyPending(bid,p);
+    showToast(`${bid} actualizado (demo — conecta API para guardar en SAP B1)`,'#e67e22');
+  }
+}
+
+function applyPending(bid,p){
+  const o = orders.find(x=>x.b===bid);
+  if(o){o.start=p.start;o.end=p.end;}
+  delete pending[bid];
+  renderDetail(); renderGantt(); updateStats(); generateSQL();
+}
+
+function generateSQL(){
+  const keys = Object.keys(pending);
+  if(!keys.length){document.getElementById('sql-content').textContent='-- Sin cambios pendientes';return;}
+  document.getElementById('sql-content').textContent = keys.map(bid=>{
+    const p=pending[bid];
+    return`UPDATE [@BMM_PNMAST]\nSET U_SCHEDULEDSTARTDATE='${p.start}',\n    U_SCHEDULEDENDDATE='${p.end}'\nWHERE U_BATCHNO='${bid}';`;
+  }).join('\n\n');
+}
+
+async function connectAPI(){
+  apiBase = document.getElementById('api-url').value.replace(/\/$/,'');
+  const dot = document.getElementById('api-dot');
+  const msg = document.getElementById('api-status');
+  try{
+    const r = await fetch(`${apiBase}/api/ordenes`);
+    const data = await r.json();
+    if(Array.isArray(data)&&data.length){
+      orders = data.map(d=>({
+        b:d.U_BATCHNO||'',so:d.U_EWP_SONUMREF||'',cli:d.U_EWP_CUSTOMERREF||'',
+        pid:d.U_EWP_FGIDREF||'',desc:d.U_EWP_FGDESREF||'',linea:d.U_PROCESSCELLID||'',
+        cant:d.U_EWP_QTYPRODREF||'',uom:d.U_EWP_PRODUOMREF||'',
+        start:(d.U_SCHEDULEDSTARTDATE||'').split('T')[0],
+        end:(d.U_SCHEDULEDENDDATE||'').split('T')[0],
+        status: getStatus(d)
+      }));
+      connected=true;
+      selectedLines=new Set(orders.map(o=>o.linea));
+      dot.className='dot ok';
+      msg.textContent=`Conectado — ${data.length} órdenes cargadas`;
+      pending={};
+      renderSidebar();renderGantt();renderDetail();updateStats();
+      showToast(`✓ ${data.length} órdenes cargadas desde SAP B1`);
+    } else {
+      dot.className='dot err'; msg.textContent='Sin datos';
+    }
+  } catch(e){
+    dot.className='dot err'; msg.textContent='Sin conexión — usando datos de ejemplo';
+    connected=false;
+  }
+}
+
+function getStatus(d){
+  const s = (d.U_BATCHSTATUS||'').toLowerCase();
+  if(s.includes('lib')) return 'liberado';
+  if(s.includes('emit')) return 'emitido';
+  if(s.includes('tard')) return 'tarde';
+  return 'asignado';
+}
+
+document.getElementById('btn-prev').addEventListener('click',()=>{weekOffset--;renderGantt();});
+document.getElementById('btn-next').addEventListener('click',()=>{weekOffset++;renderGantt();});
+document.getElementById('btn-today').addEventListener('click',()=>{weekOffset=0;renderGantt();});
+document.getElementById('btn-connect').addEventListener('click',connectAPI);
+document.getElementById('btn-load').addEventListener('click',connectAPI);
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  generateSQL();
+  document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.btab[data-tab="sql"]').classList.add('active');
+  document.getElementById('tab-detalle').style.display='none';
+  document.getElementById('tab-sql').style.display='block';
+  showToast('SQL generado');
+});
+
+document.getElementById('btn-copy-sql').addEventListener('click',()=>{
+  const sql = document.getElementById('sql-content').textContent;
+  navigator.clipboard.writeText(sql).then(()=>showToast('SQL copiado'));
+});
+
+document.getElementById('btn-save-all').addEventListener('click',()=>{
+  const keys=[...Object.keys(pending)];
+  if(!keys.length){showToast('Sin cambios pendientes','#e67e22');return;}
+  keys.forEach(bid=>saveOrder(bid));
+});
+
+document.querySelectorAll('.btab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-detalle').style.display=tab.dataset.tab==='detalle'?'block':'none';
+    document.getElementById('tab-sql').style.display=tab.dataset.tab==='sql'?'block':'none';
+  });
+});
+
+renderSidebar();renderGantt();renderDetail();updateStats();generateSQL();
+</script>
+</body>
+</html>
